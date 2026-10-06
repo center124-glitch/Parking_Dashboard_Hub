@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SBK Parking Dashboard Hub v4 : เพิ่มเอฟเฟกต์การ์ด/แดชบอร์ด (สปอตไลต์ ขอบหมุน ริปเปิล เครือข่ายอนุภาค พิมพ์ข้อความ) + โหมดเปิดแอป -->
+<!-- SBK Parking Dashboard Hub v6 : โลโก้/ไอคอนนิ่ง ไม่สั่น + ล็อกการเลื่อนซ้ายขวาบนมือถือ | สลับ Car Priority เป็นเวอร์ชัน Real-Time | เพิ่มเอฟเฟกต์การ์ด/แดชบอร์ด (สปอตไลต์ ขอบหมุน ริปเปิล เครือข่ายอนุภาค พิมพ์ข้อความ) + โหมดเปิดแอป -->
 <html lang="th">
 <head>
 <meta charset="UTF-8">
@@ -40,7 +40,7 @@ header{position:relative;z-index:2;display:flex;align-items:center;gap:12px;padd
 #home{position:relative;z-index:1;flex:1;min-height:0;padding:12px 16px 50px;overflow:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
 .hero{width:70%;min-width:min(100%,560px);border-radius:18px;padding:10px 18px;background:linear-gradient(120deg,#6366f1,#ec4899,#f59e0b,#06b6d4);background-size:300% 300%;animation:flow 9s ease infinite;color:#fff;display:flex;align-items:center;gap:14px;position:relative;overflow:hidden;box-shadow:0 10px 30px #6366f155}
 .hero:after{content:"";position:absolute;top:0;bottom:0;width:60px;background:linear-gradient(90deg,transparent,#fff5,transparent);transform:skewX(-20deg);animation:sweep 4.5s infinite}
-.hero h1{font-size:18px;line-height:1.3}.hero p{font-size:12px;opacity:.92}.hero .em{font-size:28px;animation:bob 2.4s ease-in-out infinite}
+.hero h1{font-size:18px;line-height:1.3}.hero p{font-size:12px;opacity:.92}.hero .em{font-size:28px}
 @keyframes flow{50%{background-position:100% 50%}}
 @keyframes sweep{from{left:-80px}to{left:110%}}
 @keyframes bob{50%{transform:translateY(-5px) rotate(-8deg)}}
@@ -54,7 +54,7 @@ header{position:relative;z-index:2;display:flex;align-items:center;gap:12px;padd
 .c:after{content:"";position:absolute;width:90px;height:90px;border-radius:50%;right:-26px;top:-26px;background:rgba(255,255,255,.16);animation:pls 3.2s ease-in-out infinite}
 @keyframes pls{50%{transform:scale(1.35);opacity:.5}}
 .top{display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:1}
-.ic{width:clamp(34px,5.2vh,46px);height:clamp(34px,5.2vh,46px);display:grid;place-items:center;border-radius:14px;background:rgba(255,255,255,.22);font-size:clamp(18px,3vh,25px);backdrop-filter:blur(4px);box-shadow:inset 0 0 0 1px #fff4;animation:flt 3.4s ease-in-out infinite}
+.ic{width:clamp(34px,5.2vh,46px);height:clamp(34px,5.2vh,46px);display:grid;place-items:center;border-radius:14px;background:rgba(255,255,255,.22);font-size:clamp(18px,3vh,25px);backdrop-filter:blur(4px);box-shadow:inset 0 0 0 1px #fff4}
 @keyframes flt{50%{transform:translateY(-4px)}}
 .no{font-size:10px;background:#0003;padding:1px 8px;border-radius:99px}
 .c h3{font-size:clamp(12px,1.55vw,14.5px);line-height:1.3;position:relative;z-index:1}.c p{font-size:clamp(10px,1.1vw,11.5px);opacity:.92;line-height:1.35;position:relative;z-index:1}
@@ -88,7 +88,8 @@ iframe{width:100%;height:100%;border:0;display:block}
  background:radial-gradient(900px 600px at 50% 40%,#2b2f77,#080d24 70%);transition:opacity .7s,visibility .7s}
 .ov.off{opacity:0;visibility:hidden}
 .ov canvas{position:absolute;inset:0;width:100%;height:100%;z-index:-1}
-.big{width:min(34vw,170px);height:auto;animation:fl 3s ease-in-out infinite;filter:drop-shadow(0 0 30px #8b5cf6)}
+.big{width:min(34vw,170px);height:auto;animation:glw 3.2s ease-in-out infinite;filter:drop-shadow(0 0 26px #8b5cf6)}
+@keyframes glw{50%{filter:drop-shadow(0 0 46px #a78bfa)}}
 @keyframes fl{50%{transform:translateY(-10px) scale(1.05)}}
 .ov h2{font-size:clamp(22px,5vw,36px);background:linear-gradient(90deg,#67e8f9,#c084fc,#fda4af,#fde68a,#67e8f9);-webkit-background-clip:text;background-clip:text;color:transparent;background-size:250%;animation:flow 4s linear infinite}
 .ov .dt{font-size:clamp(15px,3.6vw,22px)}
@@ -119,6 +120,14 @@ iframe{width:100%;height:100%;border:0;display:block}
 @keyframes blk{50%{opacity:0}}
 .hero h1{background:linear-gradient(90deg,#fff,#ffe9a8,#fff);background-size:200%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:flow 5s linear infinite}
 .pill .n{font-weight:700;min-width:1.2em;text-align:center}
+
+/* ===== v6 ล็อกการเลื่อน/ขยับซ้ายขวา ===== */
+html,body{max-width:100%;overflow-x:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%}
+#app,#view{max-width:100vw;overflow-x:hidden}
+#home{overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y}
+#tabs{position:relative;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+.c,.tb,.ib{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.logo-lock{transform:none!important}
 /* Responsive: แท็บเล็ต / มือถือ / จอเตี้ย */
 @media(max-width:1100px){.hero,.grid,.stat{width:92%}}
 @media(max-width:820px){.grid{grid-template-columns:repeat(2,1fr);grid-auto-rows:118px}.hero,.grid,.stat{width:100%}.hero p,#clk .d,.ttl small{display:none}#home{justify-content:flex-start;padding-bottom:30px}.c h3{font-size:13.5px}.c p{font-size:11px}}
@@ -189,7 +198,7 @@ const APPS=[
  {n:'EarlyBird Analytics',d:'ยอดจอดรถก่อนเวลาเปิดทำการ',i:'🌅',c:['#f59e0b','#d97706'],u:'https://center124-glitch.github.io/EarlyBird-Parking-Analytics/'},
  {n:'Parking Fine',d:'ค่าปรับบัตรจอดรถ / E-D',i:'🧾',c:['#ef4444','#b91c1c'],u:'https://center124-glitch.github.io/ParkingFine_E-D/'},
  {n:'Customer & Cars',d:'รายงานลูกค้าและยานพาหนะ',i:'🚗',c:['#22c55e','#15803d'],u:'https://niran7198-hub.github.io/Customer-and-Cars-Report/'},
- {n:'Car Priority',d:'Intelligence จัดลำดับรถ',i:'🧠',c:['#a855f7','#7e22ce'],u:'https://niran7198-hub.github.io/Car_Priority_Intelligence_Dashboard_v24/'},
+ {n:'Car Priority',d:'Intelligence จัดลำดับรถ Real-Time',i:'🧠',c:['#a855f7','#7e22ce'],u:'https://niran7198-hub.github.io/Dashboard-Car-Priority-Intelligence-RealTime/'},
  {n:'Car Database Pro',d:'ฐานข้อมูลรถยนต์',i:'🗄️',c:['#ec4899','#be185d'],u:'https://center124-glitch.github.io/Car_Dadabase_Pro/'},
  {n:'CCTV Database',d:'ฐานข้อมูลกล้องวงจรปิด',i:'📹',c:['#64748b','#334155'],u:'https://center124-glitch.github.io/CCTV-Database-V42/'},
  {n:'SDC vs SBK',d:'เปรียบเทียบยอดรายวัน',i:'📊',c:['#f97316','#c2410c'],u:'https://center124-glitch.github.io/SDC-vs-SBK-Daily-Compare/'}
@@ -238,7 +247,7 @@ function openApp(k){
  cur=k;
  $('#home').style.display='none';$('#view').style.display='flex';fx($('#view'));
  $$('.tb').forEach((b,j)=>{b.classList.toggle('on',j===k);b.style.background=j===k?`linear-gradient(135deg,${a.c[0]},${a.c[1]})`:''});
- $$('.tb')[k].scrollIntoView({inline:'center',block:'nearest'});
+ {const t=$$('.tb')[k],bar=$('#tabs');bar.scrollTo({left:t.offsetLeft-(bar.clientWidth-t.offsetWidth)/2,behavior:'smooth'})}
  $('#ld').style.display='flex';$('#ldT').textContent='กำลังโหลด '+a.n+' ...';
  $('#ext').href=a.u;$('#fr').src=a.u;
  clearTimeout(window.slowT);
