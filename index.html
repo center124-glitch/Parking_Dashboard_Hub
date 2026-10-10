@@ -1,35 +1,63 @@
 <!DOCTYPE html>
-<!-- SBK Parking Hub v3 (โลโก้ใหม่: ตรา P + วงโคจร 10 ระบบ) (v2: เพิ่มเอฟเฟกต์: อนุภาคพื้นหลัง, การ์ดเอียง 3D+แสงตามเมาส์, ripple, นับตัวเลข, แบนเนอร์ทักทาย) — รวม Dashboard ลานจอดรถ 10 ระบบ (ฮับตัวฝากลิงก์ เปิดแอปต้นฉบับตามที่แอปหลักเขียนไว้) -->
+<!--
+  SBK Parking Hub v4 — รวม Dashboard ลานจอดรถ 10 ระบบ (Single-file Web App)
+  v4: เปิดแอปแบบเดียวกับ SBK Center Hub — Viewer เต็มจอในหน้าเดียว (← หน้าหลัก / ชื่อแอป / ⟳ / ↗) + หน้าโหลดแสดงไอคอน/ชื่อแอป
+      + iframe pool (โหลดล่วงหน้าเมื่อชี้เมาส์/แอปที่ใช้บ่อย, เปิดซ้ำได้ทันที, ค้างเกิน 5 นาทีโหลดข้อมูลใหม่)
+      แก้บั๊ก: แตะหน้าโลโก้/ปลุกจอแล้วเปิดแอปใต้นิ้วโดยไม่ตั้งใจ, กล่องพักหน้าจอล้นขอบบนมือถือ, โหมดลดการเคลื่อนไหวกะพริบรัว,
+      Toast ล้นจอ, ไอคอนมุมเหลี่ยม/มุมขาวบน PC และ Android, ค่าธีมเสียหาย | เพิ่ม Error Handling, ตรวจจับออฟไลน์, ปุ่ม Back ของมือถือ
+      | แก้กระพริบตอนเลื่อนบน iOS | รองรับ Safe Area/รอยบากทุกด้าน | Responsive มือถือ/แท็บเล็ต/โน้ตบุ๊ก/เดสก์ท็อป
+  v3: โลโก้ใหม่ ตรา P + วงโคจร 10 ระบบ | v2: อนุภาคพื้นหลัง, การ์ดเอียง 3D, ripple, นับตัวเลข, แบนเนอร์ทักทาย
+-->
 <html lang="th">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>SBK Parking Hub</title>
 <meta name="theme-color" content="#0b1020">
+<meta name="color-scheme" content="dark light">
+<meta name="format-detection" content="telephone=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="SBK Parking">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" id="fav" href="data:,">
 <link rel="apple-touch-icon" id="touch" href="">
-<link rel="manifest" id="mf">
+<link rel="manifest" id="mf" href="">
+<link rel="preconnect" href="https://center124-glitch.github.io">
+<link rel="preconnect" href="https://niran7198-hub.github.io">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
+<script>
+/* ธีม + ตรวจ iOS ก่อนแสดงผล (กันหน้าจอแวบสีผิด) — ค่าที่บันทึกต้องเป็น dark/light เท่านั้น */
+(function(){var t=null;try{t=localStorage.getItem('sbkhub_theme')}catch(e){}if(t!=='dark'&&t!=='light')t='dark';document.documentElement.dataset.theme=t;
+var ua=navigator.userAgent||'';if(/iP(hone|od|ad)/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1))document.documentElement.classList.add('ios')})();
+</script>
 <style>
-:root{--bg:#0b1020;--bg2:#141b34;--tx:#eef2ff;--mu:#9aa6c8;--card:rgba(255,255,255,.07);--bd:rgba(255,255,255,.14)}
-:root[data-theme=light]{--bg:#eef3ff;--bg2:#ffffff;--tx:#14204a;--mu:#5b678f;--card:rgba(255,255,255,.85);--bd:rgba(20,32,74,.12)}
+:root{--bg:#0b1020;--bg2:#141b34;--tx:#eef2ff;--mu:#9aa6c8;--card:rgba(255,255,255,.07);--bd:rgba(255,255,255,.14);
+  --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);--sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px);--barH:56px;color-scheme:dark}
+:root[data-theme=light]{--bg:#eef3ff;--bg2:#ffffff;--tx:#14204a;--mu:#5b678f;--card:rgba(255,255,255,.85);--bd:rgba(20,32,74,.12);color-scheme:light}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;overflow-x:hidden;max-width:100vw;touch-action:pan-y;overscroll-behavior-x:none}
-body{font-family:'Prompt','Sarabun',sans-serif;line-height:1.6;background:var(--bg);color:var(--tx);padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-/* พื้นหลังไล่สีเคลื่อนไหวช้าๆ (ไม่กะพริบ) */
-.bgfx{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
-.bgfx i{position:absolute;width:55vmax;height:55vmax;border-radius:50%;filter:blur(90px);opacity:.38;animation:float 26s ease-in-out infinite alternate}
+html,body{margin:0;min-height:100%;overflow-x:hidden;max-width:100%;overscroll-behavior-x:none;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{font-family:'Prompt','Sarabun',sans-serif;line-height:1.6;background:var(--bg);color:var(--tx)}
+body.lock{overflow:hidden} /* ขณะแสดง Splash/Viewer/พักหน้าจอ: กันหน้าหลักด้านหลังเลื่อนตาม */
+button{font-family:inherit;color:inherit}
+:focus-visible{outline:3px solid #22d3ee;outline-offset:2px}
+/* พื้นหลังไล่สีเคลื่อนไหวช้าๆ — ผูกกับ 100lvh: แถบที่อยู่ Safari หด/ยืดตอนเลื่อนไม่ทำให้ปรับขนาด (สาเหตุกระพริบ) */
+.bgfx,#fx{position:fixed;left:0;top:0;width:100%;height:100vh;height:100lvh;pointer-events:none}
+.bgfx{z-index:0;overflow:hidden}
+.bgfx i{position:absolute;width:55vmax;height:55vmax;border-radius:50%;filter:blur(90px);opacity:.38;animation:float 26s ease-in-out infinite alternate;transform:translateZ(0);backface-visibility:hidden}
 .bgfx i:nth-child(1){background:#6366f1;left:-15vmax;top:-15vmax}
 .bgfx i:nth-child(2){background:#06b6d4;right:-18vmax;top:10vmax;animation-delay:-8s}
 .bgfx i:nth-child(3){background:#ec4899;left:20vmax;bottom:-25vmax;animation-delay:-15s}
 :root[data-theme=light] .bgfx i{opacity:.22}
-@keyframes float{to{transform:translate(6vmax,5vmax) scale(1.12)}}
+@keyframes float{to{transform:translate3d(6vmax,5vmax,0) scale(1.12)}}
+#fx{z-index:0}
+
 /* ===== Splash ===== */
-#splash{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(circle at 50% 40%,#1e2a66,#0b1020 70%);color:#fff;transition:opacity .7s,transform .7s}
+#splash{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:pointer;
+  padding:calc(20px + var(--st)) calc(20px + var(--sr)) calc(20px + var(--sb)) calc(20px + var(--sl));
+  background:radial-gradient(circle at 50% 40%,#1e2a66,#0b1020 70%);color:#fff;transition:opacity .7s,transform .7s}
 #splash.out{opacity:0;transform:scale(1.08);pointer-events:none}
 .logoWrap{position:relative;width:min(46vw,190px);height:min(46vw,190px);display:flex;align-items:center;justify-content:center}
 .logoWrap svg{width:78%;height:78%;filter:drop-shadow(0 12px 30px rgba(99,102,241,.6));animation:pop 1s cubic-bezier(.2,1.3,.4,1) both}
@@ -37,137 +65,232 @@ body{font-family:'Prompt','Sarabun',sans-serif;line-height:1.6;background:var(--
 .ring.r2{inset:-14px;border-top-color:#f472b6;border-left-color:#fbbf24;animation-duration:5s;animation-direction:reverse}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
-.sTitle{margin:26px 0 2px;font-size:clamp(26px,6vw,40px);font-weight:700;letter-spacing:.5px;background:linear-gradient(90deg,#22d3ee,#a78bfa,#f472b6,#fbbf24,#22d3ee);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 6s linear infinite}
+.sTitle{margin:26px 0 2px;font-size:clamp(26px,6vw,40px);font-weight:700;letter-spacing:.5px;line-height:1.3;background:linear-gradient(90deg,#22d3ee,#a78bfa,#f472b6,#fbbf24,#22d3ee);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 6s linear infinite}
 @keyframes shine{to{background-position:300% 0}}
 .sSub{color:#b9c4f0;font-size:clamp(13px,3.2vw,16px)}
 .sDate{margin-top:22px;font-size:clamp(15px,3.8vw,20px);font-weight:500}
 .sTime{font-size:clamp(34px,10vw,58px);font-weight:700;font-variant-numeric:tabular-nums;background:linear-gradient(90deg,#fbbf24,#f472b6);-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1.3}
 .bar{width:min(60vw,260px);height:5px;border-radius:9px;background:rgba(255,255,255,.15);margin-top:22px;overflow:hidden}
-.bar b{display:block;height:100%;width:0;border-radius:9px;background:linear-gradient(90deg,#22d3ee,#a78bfa,#f472b6);animation:load 3s linear forwards}
-@keyframes load{to{width:100%}}
+.bar b{display:block;height:100%;width:100%;transform:scaleX(0);transform-origin:left;border-radius:9px;background:linear-gradient(90deg,#22d3ee,#a78bfa,#f472b6);animation:load var(--dur,3s) linear forwards}
+@keyframes load{to{transform:scaleX(1)}}
 .hint{margin-top:10px;font-size:12px;color:#8e9acb}
+@media(max-height:520px){.logoWrap{width:110px;height:110px}.sTitle{margin-top:8px}.sDate{margin-top:6px}.bar{margin-top:10px}}
+
 /* ===== Main ===== */
-#app{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:14px 14px 28px;opacity:0;transition:opacity .6s}
+#app{position:relative;z-index:1;max-width:1280px;margin:0 auto;opacity:0;transition:opacity .6s;
+  padding:calc(14px + var(--st)) max(14px,var(--sr)) calc(28px + var(--sb)) max(14px,var(--sl))}
 #app.show{opacity:1}
-header{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-header .lg{width:46px;height:46px;flex:none}
-header .lg svg{width:100%;height:100%}
-header h1{margin:0;font-size:clamp(18px,4.6vw,26px);line-height:1.3}
+header{display:flex;align-items:center;gap:12px}
+/* โลโก้หัวเว็บ: ไม่ใส่ border-radius/เงาสี่เหลี่ยม ใช้ drop-shadow ตามรูปทรงจริง → มุมโค้งสะอาด ไม่มีขอบเกินบน PC */
+header .lg{width:46px;height:46px;flex:none;filter:drop-shadow(0 0 8px rgba(99,102,241,.55))}
+header .lg svg{display:block;width:100%;height:100%}
+header .ttl{min-width:0}
+header h1{margin:0;font-size:clamp(18px,4.6vw,26px);line-height:1.3;white-space:nowrap}
 header small{color:var(--mu);display:block;font-size:12px}
-.clock{margin-left:auto;text-align:right;font-size:12px;color:var(--mu)}
+.clock{margin-left:auto;text-align:right;font-size:12px;color:var(--mu);white-space:nowrap}
 .clock b{display:block;font-size:clamp(18px,4.6vw,24px);color:var(--tx);font-variant-numeric:tabular-nums}
-.tbtn{border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:12px;width:40px;height:40px;font-size:18px;cursor:pointer}
+.tbtn{flex:none;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:12px;width:42px;height:42px;font-size:18px;cursor:pointer;transition:transform .4s}
+.aurora{height:3px;border-radius:9px;margin-top:10px;background:linear-gradient(90deg,#22d3ee,#6366f1,#ec4899,#fbbf24,#22d3ee);background-size:300% 100%;animation:shine 8s linear infinite;opacity:.85}
+.hero{position:relative;overflow:hidden;margin-top:12px;padding:10px 16px;border-radius:18px;border:1px solid var(--bd);background:var(--card);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);display:flex;align-items:center;gap:12px}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 40%,rgba(255,255,255,.14) 50%,transparent 60%);transform:translateX(-120%);animation:sweep 9s ease-in-out infinite;pointer-events:none}
+@keyframes sweep{60%,100%{transform:translateX(120%)}}
+.hero .em{font-size:30px;animation:bob 4s ease-in-out infinite alternate}
+.hero b{display:block;font-size:clamp(15px,3.8vw,19px);line-height:1.4;background:linear-gradient(90deg,#22d3ee,#a78bfa,#f472b6);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 7s linear infinite}
+.hero span{font-size:12.5px;color:var(--mu)}
+.live{display:inline-flex;align-items:center;gap:6px;margin-left:auto;flex:none;font-size:12px;color:var(--mu);border:1px solid var(--bd);border-radius:99px;padding:2px 10px;position:relative}
+.live i{width:8px;height:8px;border-radius:50%;background:#22c55e;animation:ping 1.8s infinite}
+body.offline .live i{background:#ef4444;animation:none}
+@keyframes ping{0%{box-shadow:0 0 0 0 #22c55e99}100%{box-shadow:0 0 0 8px #22c55e00}}
 .tools{display:flex;gap:10px;margin:14px 0 6px;flex-wrap:wrap;align-items:center}
-.tools input{flex:1 1 200px;min-width:0;padding:10px 14px;border-radius:12px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font:inherit;font-size:14px;outline:none}
-.tools input:focus{border-color:#818cf8}
-.chips{display:flex;gap:8px;overflow-x:auto;padding:4px 0;scrollbar-width:none;flex:1 1 100%}
+.search{position:relative;flex:1 1 220px;min-width:0}
+.search input{width:100%;min-height:44px;padding:10px 40px 10px 14px;border-radius:12px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font:inherit;font-size:16px;outline:none;-webkit-appearance:none;appearance:none}
+.search input::-webkit-search-cancel-button{-webkit-appearance:none}
+.search input:focus{border-color:#818cf8;box-shadow:0 0 0 3px #818cf855}
+.search button{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:32px;height:32px;border:0;border-radius:9px;background:var(--bd);cursor:pointer;display:none}
+.search.has button{display:block}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:4px 0;scrollbar-width:none;flex:1 1 100%;overscroll-behavior-x:contain}
 .chips::-webkit-scrollbar{display:none}
-.chip{flex:none;border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:6px 14px;border-radius:99px;font:inherit;font-size:13px;cursor:pointer;transition:background .25s,color .25s}
+.chip{flex:none;border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:6px 14px;border-radius:99px;font-size:13px;cursor:pointer;transition:background .25s,color .25s,transform .2s;min-height:36px}
+.chip .c{opacity:.65;font-size:11px;margin-left:4px}
 .chip.on{background:linear-gradient(90deg,#6366f1,#ec4899);color:#fff;border-color:transparent}
 .stats{display:flex;gap:10px;margin:10px 0 16px;flex-wrap:wrap}
-.stat{flex:1 1 120px;border-radius:16px;padding:10px 14px;color:#fff;box-shadow:0 8px 20px rgba(0,0,0,.22)}
-.stat b{font-size:24px;display:block;line-height:1.2}.stat span{font-size:12px;opacity:.9}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
-@media(max-width:380px){.grid{grid-template-columns:repeat(2,1fr);gap:10px}}
-.card{position:relative;display:flex;flex-direction:column;gap:6px;padding:14px 12px 12px;border-radius:18px;color:#fff;text-decoration:none;overflow:hidden;box-shadow:0 8px 22px rgba(0,0,0,.28);transition:transform .2s ease-out,box-shadow .3s;animation:rise .6s ease backwards;transform-style:preserve-3d;will-change:transform}
-.card::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 35%,rgba(255,255,255,.22) 50%,transparent 65%);transform:translateX(-120%);transition:transform .8s}
-.card:hover{box-shadow:0 16px 34px rgba(0,0,0,.4),0 0 24px var(--glow,transparent)}
-.card:hover::after{transform:translateX(120%)}
-
+.stat{flex:1 1 120px;border-radius:16px;padding:10px 14px;color:#fff;box-shadow:0 8px 20px rgba(0,0,0,.22);animation:rise .6s ease backwards;transition:transform .3s}
+.stat b{font-size:24px;display:block;line-height:1.2;font-variant-numeric:tabular-nums}.stat span{font-size:12px;opacity:.9}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+@media(max-width:420px){.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}
+@media(min-width:1024px){.grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}}
+.card{position:relative;display:flex;flex-direction:column;gap:6px;padding:14px 12px 12px;border:0;border-radius:18px;color:#fff;text-align:left;cursor:pointer;min-width:0;min-height:150px;overflow:hidden;
+  box-shadow:0 8px 22px rgba(0,0,0,.28);transition:transform .2s ease-out,box-shadow .3s;animation:rise .6s ease backwards;font:inherit}
+.card::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 35%,rgba(255,255,255,.22) 50%,transparent 65%);transform:translateX(-120%);transition:transform .8s;pointer-events:none}
+.card::before{content:"";position:absolute;inset:0;background:radial-gradient(circle 120px at var(--mx,50%) var(--my,50%),rgba(255,255,255,.35),transparent 70%);opacity:0;transition:opacity .3s;pointer-events:none}
+.card:active{transform:scale(.97)!important}
 @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-.ic{width:42px;height:42px;border-radius:13px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:23px;line-height:1}
-.card h3{margin:2px 0 0;font-size:14px;font-weight:600;line-height:1.35}
+.ic{width:42px;height:42px;border-radius:13px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:23px;line-height:1;
+  animation:bob 5s ease-in-out infinite alternate;animation-delay:var(--d,0s);box-shadow:0 4px 14px rgba(0,0,0,.18) inset,0 0 0 1px rgba(255,255,255,.18)}
+@keyframes bob{to{transform:translateY(-3px)}}
+.card h3{margin:2px 0 0;font-size:14px;font-weight:600;line-height:1.35;overflow-wrap:anywhere}
 .card p{margin:0;font-size:11.5px;opacity:.9;line-height:1.45;flex:1}
 .tag{align-self:flex-start;font-size:10.5px;background:rgba(0,0,0,.24);padding:1px 9px;border-radius:99px}
-.go{position:absolute;right:10px;top:10px;font-size:15px;opacity:.85}
+.go{position:absolute;right:10px;top:10px;font-size:10.5px;font-weight:600;padding:1px 8px;border-radius:99px;background:rgba(0,0,0,.2);opacity:.9;transition:.25s}
+.card.warm .go{background:#ffffffe0;color:#1e1b4b}
+.rip{position:absolute;border-radius:50%;background:rgba(255,255,255,.45);width:20px;height:20px;margin:-10px 0 0 -10px;transform:scale(0);animation:rp .7s ease-out forwards;pointer-events:none}
+@keyframes rp{to{transform:scale(14);opacity:0}}
 .empty{text-align:center;color:var(--mu);padding:40px 0;display:none}
+.empty b{display:block;font-size:38px}
 footer{margin-top:22px;text-align:center;font-size:12px;color:var(--mu)}
-#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,30px);background:#10b981;color:#fff;padding:9px 18px;border-radius:99px;font-size:13px;opacity:0;transition:.35s;z-index:70;pointer-events:none;white-space:nowrap}
-#toast.on{opacity:1;transform:translate(-50%,0)}
+/* hover เฉพาะอุปกรณ์ที่มีเมาส์จริง → มือถือไม่ค้างสถานะ hover */
+@media(hover:hover) and (pointer:fine){
+  .card{will-change:transform}
+  .card:hover{box-shadow:0 16px 34px rgba(0,0,0,.4),0 0 24px var(--glow,transparent)}
+  .card:hover::after{transform:translateX(120%)}
+  .card:hover::before{opacity:1}
+  .stat:hover{transform:translateY(-3px)}
+  .chip:hover{transform:translateY(-1px)}
+  .tbtn:hover{transform:rotate(25deg)}
+}
+@media(max-width:560px){
+  header small,.clock span{display:none}
+  .hero{padding:10px 12px}.hero span{display:none}
+  .live span{display:none}
+  .stats{gap:8px}.stat{flex:1 1 calc(50% - 8px);padding:8px 12px}.stat b{font-size:20px}
+  .card{min-height:136px}
+}
+@media(pointer:coarse){.chip{min-height:40px}}
+
+/* ===== Viewer เต็มจอ (แบบเดียวกับ SBK Center Hub) ===== */
+#viewer{position:fixed;inset:0;z-index:40;background:var(--bg)}
+#viewer[hidden]{display:none}
+.vbar{position:relative;height:calc(var(--barH) + var(--st));padding:var(--st) max(10px,var(--sr)) 0 max(10px,var(--sl));display:flex;align-items:center;gap:8px;
+  background:linear-gradient(90deg,#312e81,#6d28d9,#be185d);color:#fff}
+.vbar .vt{flex:1;min-width:0;font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vb{background:#ffffff26;color:#fff;border:0;border-radius:11px;padding:8px 12px;font-size:14px;font-weight:600;min-height:40px;min-width:40px;white-space:nowrap;cursor:pointer}
+.vb:active{transform:scale(.95)}
+.load{position:absolute;left:var(--sl);right:var(--sr);top:calc(var(--barH) + var(--st));bottom:var(--sb);display:grid;place-items:center;background:var(--bg);color:var(--tx);text-align:center;z-index:2;padding:20px;transition:opacity .25s,visibility .25s}
+.load.off{opacity:0;visibility:hidden;pointer-events:none}
+.lic{font-size:56px;line-height:1.3;animation:lbob 2s ease-in-out infinite}
+@keyframes lbob{50%{transform:translateY(-6px) rotate(-6deg)}}
+.lname{font-weight:700;font-size:18px;margin:2px 0 14px}
+.lbar{width:min(60vw,260px);height:5px;border-radius:9px;background:#ffffff26;overflow:hidden;margin:0 auto 12px}
+:root[data-theme=light] .lbar{background:#0f172a1f}
+.lbar i{display:block;height:100%;width:40%;border-radius:9px;background:linear-gradient(90deg,#22d3ee,#ec4899,#f59e0b);animation:ind 1.1s ease-in-out infinite}
+@keyframes ind{from{transform:translateX(-120%)}to{transform:translateX(280%)}}
+.ltxt{color:var(--mu);font-size:14px;max-width:340px;margin:0 auto}.ltxt.warn{color:#f59e0b}
+.lacts{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px}.lacts .vb{background:#6366f1}
+/* iframe pool อยู่นอก #viewer → แอปที่โหลดล่วงหน้ามีขนาดจริง (กราฟในแอปไม่คำนวณเป็น 0)
+   ด้านล่างเว้น safe area เพราะแอปใน iframe ไม่รู้ว่ามี Home Indicator → ปุ่มล่างสุดในแอปไม่ถูกบัง */
+#frames{position:fixed;z-index:41;left:var(--sl);right:var(--sr);top:calc(var(--barH) + var(--st));bottom:var(--sb);pointer-events:none}
+.appf{position:absolute;left:0;top:0;width:100%;height:100%;display:block;border:0;background:#fff;visibility:hidden;pointer-events:none}
+body.vw .appf.cur.ready{visibility:visible;pointer-events:auto;animation:fin .25s ease both}
+@keyframes fin{from{opacity:0}}
+@media(max-width:479px){.vl{display:none}}
+@media(pointer:coarse){.vb{min-height:44px;min-width:44px}}
+
+/* ===== Toast / Offline ===== */
+#toast{position:fixed;left:50%;bottom:calc(20px + var(--sb));transform:translate(-50%,30px);background:#10b981;color:#fff;padding:9px 18px;border-radius:14px;font-size:13px;opacity:0;transition:.35s;z-index:70;pointer-events:none;max-width:calc(100vw - 32px);text-align:center;box-shadow:0 10px 30px #0006}
+#toast.on{opacity:1;transform:translate(-50%,0)}#toast.err{background:#dc2626}#toast.info{background:#6366f1}
+#offline{position:fixed;z-index:65;left:50%;top:calc(8px + var(--st));transform:translate(-50%,-160%);background:#ef4444;color:#fff;font-size:13px;font-weight:600;padding:6px 14px;border-radius:99px;box-shadow:0 6px 18px #0005;transition:transform .3s;white-space:nowrap;pointer-events:none}
+body.offline #offline{transform:translate(-50%,0)}
+
 /* ===== Screensaver ===== */
-#saver{position:fixed;inset:0;z-index:60;background:linear-gradient(135deg,#0b1020,#1b1550,#0b2a3f,#2a1040);background-size:300% 300%;animation:gshift 24s ease infinite;color:#fff;opacity:0;pointer-events:none;transition:opacity 1s}
-#saver.on{opacity:1;pointer-events:auto}
+#saver{position:fixed;inset:0;z-index:60;background:linear-gradient(135deg,#0b1020,#1b1550,#0b2a3f,#2a1040);background-size:300% 300%;animation:gshift 24s ease infinite;color:#fff;opacity:0;visibility:hidden;transition:opacity 1s,visibility 1s;cursor:pointer}
+#saver.on{opacity:1;visibility:visible}
 @keyframes gshift{50%{background-position:100% 100%}}
-#sbox{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;transition:left 12s ease-in-out,top 12s ease-in-out}
+/* เลื่อนด้วย transform และคำนวณระยะจากขนาดกล่องจริง → ไม่ล้นขอบจอบนมือถือ (v3 ใช้ left/top 25-75% ทำให้หลุดจอ) */
+#sbox{position:absolute;left:0;top:0;text-align:center;transition:transform 12s ease-in-out;will-change:transform}
 #sbox .logoWrap{margin:0 auto;width:110px;height:110px}
+#sbox .sTitle{margin-top:10px}
 #sbox .sTime{font-size:clamp(40px,12vw,72px)}
 #sbox .sDate{margin-top:0}
 #sbox .hint{margin-top:14px}
-
 .orb{transform-box:view-box;transform-origin:50% 50%;animation:spin 60s linear infinite}
-/* ===== v2: เอฟเฟกต์เพิ่มเติม (นุ่มนวล ไม่สั่น ไม่กะพริบ) ===== */
-#fx{position:fixed;inset:0;z-index:0;pointer-events:none;width:100%;height:100%}
-.card::before{content:"";position:absolute;inset:0;background:radial-gradient(circle 120px at var(--mx,50%) var(--my,50%),rgba(255,255,255,.35),transparent 70%);opacity:0;transition:opacity .3s;pointer-events:none}
-.card:hover::before{opacity:1}
-.ic{animation:bob 5s ease-in-out infinite alternate;animation-delay:var(--d,0s);box-shadow:0 4px 14px rgba(0,0,0,.18) inset,0 0 0 1px rgba(255,255,255,.18)}
-@keyframes bob{to{transform:translateY(-3px)}}
-.rip{position:absolute;border-radius:50%;background:rgba(255,255,255,.45);width:20px;height:20px;margin:-10px 0 0 -10px;transform:scale(0);animation:rp .7s ease-out forwards;pointer-events:none}
-@keyframes rp{to{transform:scale(14);opacity:0}}
-.aurora{height:3px;border-radius:9px;margin-top:10px;background:linear-gradient(90deg,#22d3ee,#6366f1,#ec4899,#fbbf24,#22d3ee);background-size:300% 100%;animation:shine 8s linear infinite;opacity:.85}
-.hero{position:relative;overflow:hidden;margin-top:12px;padding:10px 16px;border-radius:18px;border:1px solid var(--bd);background:var(--card);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:center;gap:12px}
-.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 40%,rgba(255,255,255,.14) 50%,transparent 60%);transform:translateX(-120%);animation:sweep 9s ease-in-out infinite}
-@keyframes sweep{60%,100%{transform:translateX(120%)}}
-.hero .em{font-size:30px;animation:bob 4s ease-in-out infinite alternate}
-.hero b{display:block;font-size:clamp(15px,3.8vw,19px);background:linear-gradient(90deg,#22d3ee,#a78bfa,#f472b6);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 7s linear infinite}
-.hero span{font-size:12.5px;color:var(--mu)}
-header .lg{animation:glow 4.5s ease-in-out infinite alternate;border-radius:14px}
-@keyframes glow{from{filter:drop-shadow(0 0 2px rgba(99,102,241,.4))}to{filter:drop-shadow(0 0 12px rgba(236,72,153,.65))}}
-.stat{transition:transform .3s;animation:rise .6s ease backwards}.stat:hover{transform:translateY(-3px)}
-.chip:hover{transform:translateY(-1px)}.chip{transition:background .25s,color .25s,transform .2s}
-.tbtn{transition:transform .4s}.tbtn:hover{transform:rotate(25deg)}
-@media(prefers-reduced-motion:reduce){*{animation-duration:.01s!important;transition-duration:.01s!important}}
+
+/* ===== แก้กระพริบตอนเลื่อนบน iOS =====
+   สาเหตุ: backdrop-filter + วงแสง blur ขนาดใหญ่ที่เคลื่อนที่ตลอด + canvas ถูกปรับขนาด/ล้างทุกครั้งที่แถบที่อยู่หด
+   วิธีแก้: ปิด backdrop-filter, วงแสงนิ่ง, canvas ไม่ปรับขนาดตามแถบที่อยู่, หยุดอนิเมชันชั่วคราวระหว่างเลื่อน */
+html.ios .hero{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(22,30,64,.92)}
+html.ios[data-theme=light] .hero{background:rgba(255,255,255,.95)}
+html.ios .bgfx i{animation:none;filter:blur(60px)}
+body.scrolling .ic,body.scrolling .card,body.scrolling .hero::after,body.scrolling .hero b,body.scrolling .hero .em,body.scrolling .aurora,body.scrolling .live i,body.scrolling .bgfx i,body.scrolling header .orb{animation-play-state:paused!important}
+/* โหมดลดการเคลื่อนไหว: ต้องจำกัดรอบ = 1 ด้วย (v3 ไม่จำกัด → อนิเมชันวนยาว .01s กะพริบรัวมาก) */
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 </style>
 </head>
-<body>
-<div class="bgfx"><i></i><i></i><i></i></div>
-<canvas id="fx"></canvas>
+<body class="lock">
+<div class="bgfx" aria-hidden="true"><i></i><i></i><i></i></div>
+<canvas id="fx" aria-hidden="true"></canvas>
 
 <!-- หน้าโลโก้ + วัน/เดือน/ปี : เวลา -->
-<div id="splash">
+<div id="splash" role="button" tabindex="0" aria-label="แตะเพื่อเข้าสู่ระบบ">
   <div class="logoWrap"><div class="ring"></div><div class="ring r2"></div><span data-logo></span></div>
   <div class="sTitle">SBK Parking Hub</div>
   <div class="sSub">ศูนย์รวม Dashboard ลานจอดรถ · Seacon Bangkae</div>
   <div class="sDate" data-date></div>
   <div class="sTime" data-time></div>
-  <div class="bar"><b></b></div>
+  <div class="bar"><b id="pb"></b></div>
   <div class="hint">แตะที่หน้าจอเพื่อเข้าทันที</div>
 </div>
 
 <div id="app">
   <header>
     <div class="lg" data-logo></div>
-    <div><h1>SBK Parking Hub</h1><small>รวม Dashboard ลานจอดรถ ศูนย์การค้าซีคอนบางแค</small></div>
+    <div class="ttl"><h1>SBK Parking Hub</h1><small>รวม Dashboard ลานจอดรถ ศูนย์การค้าซีคอนบางแค</small></div>
     <div class="clock"><span data-date></span><b data-time></b></div>
-    <button class="tbtn" id="themeBtn" title="สลับโหมดมืด/สว่าง" aria-label="สลับธีม">🌙</button>
+    <button class="tbtn" id="themeBtn" type="button" title="สลับโหมดมืด/สว่าง" aria-label="สลับโหมดมืด/สว่าง">🌙</button>
   </header>
   <div class="aurora"></div>
-  <div class="hero"><div class="em" id="hEm">👋</div><div><b id="hTx">สวัสดี</b><span>เลือกระบบที่ต้องการเปิดได้เลย — ครบทุกแดชบอร์ดลานจอดรถในที่เดียว</span></div></div>
+  <div class="hero"><div class="em" id="hEm">👋</div><div style="min-width:0"><b id="hTx">สวัสดี</b><span>เลือกระบบที่ต้องการเปิดได้เลย — ครบทุกแดชบอร์ดลานจอดรถในที่เดียว</span></div>
+    <div class="live"><i></i><span id="liveTx">พร้อมใช้งาน</span></div></div>
   <div class="tools">
-    <input id="q" type="search" placeholder="🔍 ค้นหาระบบ เช่น CCTV, ค่าปรับ, Personality">
-    <div class="chips" id="chips"></div>
+    <div class="search" id="sBox"><input id="q" type="search" inputmode="search" enterkeyhint="search" autocomplete="off" placeholder="🔍 ค้นหาระบบ เช่น CCTV, ค่าปรับ, Personality" aria-label="ค้นหาระบบ"><button id="qClr" type="button" aria-label="ล้างคำค้น">✕</button></div>
+    <div class="chips" id="chips" role="tablist" aria-label="หมวดระบบ"></div>
   </div>
   <div class="stats" id="stats"></div>
   <div class="grid" id="grid"></div>
-  <div class="empty" id="empty">ไม่พบระบบที่ค้นหา กรุณาลองคำค้นอื่น</div>
-  <footer>กดการ์ดเพื่อเปิดแอปต้นฉบับ · แอปจะหยุดพักหน้าจออัตโนมัติเมื่อไม่มีการใช้งาน 4 นาที</footer>
+  <div class="empty" id="empty"><b>🔎</b>ไม่พบระบบที่ค้นหา<br><button class="chip" id="emptyReset" type="button" style="margin-top:10px">ล้างการค้นหา</button></div>
+  <footer>แตะการ์ดเพื่อเปิดแอปในหน้านี้ · กด ↗ เพื่อเปิดแท็บใหม่ · ไม่มีการใช้งาน 4 นาที ระบบจะพักหน้าจออัตโนมัติ</footer>
 </div>
-<div id="toast"></div>
 
-<div id="saver">
+<!-- Viewer: เปิดแอปเต็มจอ -->
+<section id="viewer" aria-label="หน้าแอป" hidden>
+  <div class="vbar">
+    <button class="vb" id="vBack" type="button" aria-label="กลับหน้าหลัก">←<span class="vl"> หน้าหลัก</span></button>
+    <div class="vt" id="vTitle">-</div>
+    <button class="vb" id="vReload" type="button" title="โหลดใหม่" aria-label="โหลดใหม่">⟳</button>
+    <button class="vb" id="vOpen" type="button" title="เปิดในแท็บใหม่" aria-label="เปิดในแท็บใหม่">↗</button>
+  </div>
+  <div class="load" id="vLoad" role="status" aria-live="polite"><div>
+    <div class="lic" id="vLoadIc">⏳</div><div class="lname" id="vLoadName">-</div><div class="lbar"><i></i></div>
+    <div class="ltxt" id="vLoadTxt">กำลังโหลดระบบ...</div>
+    <div class="lacts"><button class="vb" id="vLoadRetry" type="button">⟳ ลองใหม่</button><button class="vb" id="vLoadOpen" type="button">เปิดในแท็บใหม่ ↗</button></div>
+  </div></div>
+</section>
+<!-- iframe ของแอปทั้งหมดอยู่ที่นี่ (pool) -->
+<div id="frames"></div>
+
+<div id="offline" role="status">📡 ไม่มีการเชื่อมต่ออินเทอร์เน็ต</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<div id="saver" role="button" tabindex="-1" aria-label="แตะเพื่อกลับสู่การใช้งาน">
   <div id="sbox">
     <div class="logoWrap"><div class="ring"></div><span data-logo></span></div>
     <div class="sTitle">SBK Parking Hub</div>
     <div class="sDate" data-date></div>
     <div class="sTime" data-time></div>
-    <div class="hint">แตะหรือขยับเมาส์เพื่อกลับสู่หน้าหลัก</div>
+    <div class="hint">แตะหรือขยับเมาส์เพื่อกลับสู่การใช้งาน</div>
   </div>
 </div>
 
 <script>
+'use strict';
 /* ===== ตั้งค่า ===== */
-const SPLASH_MS = 3000;            // แสดงโลโก้ 3 วินาที (อยู่ในช่วง 2-4 วินาที)
-const IDLE_MS   = 4 * 60 * 1000;   // ไม่มีการใช้งาน 4 นาที (อยู่ในช่วง 3-5 นาที) -> พักหน้าจอ
-const APPS = [
+const CFG = {
+  splashMs: 3000,           // แสดงโลโก้ 3 วินาที (ช่วง 2-4 วินาที)
+  idleMs: 4 * 60 * 1000,    // ไม่มีการใช้งาน 4 นาที -> พักหน้าจอ
+  poolMax: 4,               // จำนวนแอปที่เก็บไว้พร้อมเปิดทันที
+  staleMs: 5 * 60 * 1000,   // แอปค้างไว้นานเกินนี้ → โหลดใหม่ก่อนแสดง (ข้อมูลไม่เก่า)
+  slowMs: 8000              // โหลดนานเกินนี้แจ้งเตือน
+};
+const RAW_APPS = [
  {n:'Manpower App',d:'กำลังพลและการจัดอัตรากำลังเจ้าหน้าที่',g:'บุคลากร',i:'👥',c:['#6366f1','#8b5cf6'],u:'https://center124-glitch.github.io/Manpower-App/'},
  {n:'Daily Personality',d:'รายงานบุคลิกภาพเจ้าหน้าที่ลานจอดประจำวัน',g:'บุคลากร',i:'🧑‍✈️',c:['#ec4899','#f43f5e'],u:'https://niran7198-hub.github.io/Daily-Personality-Carpark-Repots/'},
  {n:'Monthly Personality',d:'รายงานบุคลิกภาพเจ้าหน้าที่ลานจอดประจำเดือน',g:'บุคลากร',i:'📋',c:['#f97316','#ef4444'],u:'https://niran7198-hub.github.io/Monthly-Personality-Carpark-Report/'},
@@ -180,16 +303,45 @@ const APPS = [
  {n:'CCTV Database',d:'ฐานข้อมูลกล้องวงจรปิด',g:'ฐานข้อมูล',i:'📹',c:['#ef4444','#be185d'],u:'https://center124-glitch.github.io/CCTV-Database-V42/'}
 ];
 const GROUPS = ['ทั้งหมด','บุคลากร','วิเคราะห์ยอด','ฐานข้อมูล'];
-const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
-let grp = 'ทั้งหมด';
+/* ตรวจข้อมูลแอปก่อนใช้: URL ต้องเป็น https, หมวดต้องมีจริง, สีต้องเป็นรหัส hex (กันพิมพ์ผิดตอนเพิ่มแอปแล้วการ์ด/ลิงก์พัง) */
+const APPS = RAW_APPS.filter(a => {
+  try{
+    const ok = new URL(a.u).protocol === 'https:' && a.n && GROUPS.includes(a.g) && a.g !== 'ทั้งหมด' && Array.isArray(a.c) && a.c.every(x => /^#[0-9a-f]{3,8}$/i.test(x));
+    if(!ok) console.warn('[SBK Parking Hub] ข้ามแอปที่ตั้งค่าผิด', a);
+    return ok;
+  }catch(e){ console.warn('[SBK Parking Hub] URL ผิด', a); return false; }
+});
 
-/* ===== โลโก้ (SVG) ===== */
-/* โลโก้ใหม่: ตรา "P" กลางวงกลมไล่สี ล้อมด้วยจุดสี 10 จุด = 10 ระบบ Dashboard (สีตรงกับการ์ดแต่ละใบ) */
-const P_OUT='M48 42h13a11 11 0 0 1 0 22h-5v14h-8z M56 50v7h5a3.5 3.5 0 0 0 0-7z';
-function dotPos(i){ const t=-Math.PI/2+i*2*Math.PI/10; return [60+42*Math.cos(t), 60+42*Math.sin(t)]; }
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const p2 = n => String(n).padStart(2,'0');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const mm = q => { try{ return matchMedia(q); }catch(e){ return {matches:false}; } };
+const RM = mm('(prefers-reduced-motion: reduce)').matches, FINE = mm('(hover:hover) and (pointer:fine)').matches;
+// localStorage อาจใช้ไม่ได้ (Safari โหมดส่วนตัว / ปิดคุกกี้) → ห่อ try/catch ทุกจุด
+const store = {
+  get(k,d){ try{ const v = localStorage.getItem(k); return v === null ? d : v; }catch(e){ return d; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} },
+  json(k,d){ try{ const v = JSON.parse(localStorage.getItem(k)); return v && typeof v === 'object' ? v : d; }catch(e){ return d; } }
+};
+
+/* ===== Toast + Error handling ส่วนกลาง ===== */
+let tt;
+function toast(m, type){ const t = $('#toast'); if(!t) return; t.textContent = m; t.className = 'on' + (type ? ' ' + type : ''); clearTimeout(tt); tt = setTimeout(() => t.className = '', 2600); }
+let lastErr = 0;
+function reportErr(e, w){ console.error('[SBK Parking Hub]' + (w ? ' ' + w : ''), e); const n = Date.now(); if(n - lastErr > 10000){ lastErr = n; toast('เกิดข้อผิดพลาดบางส่วน ระบบยังใช้งานได้ตามปกติ', 'err'); } }
+addEventListener('error', e => { if(e && e.error) reportErr(e.error, 'window'); });
+addEventListener('unhandledrejection', e => reportErr(e.reason, 'promise'));
+// กลืน click ที่ตามหลังการแตะเพื่อปิด Splash/พักหน้าจอ → ไม่ทะลุไปเปิดการ์ดใต้นิ้ว (บั๊กใน v3)
+let swallowUntil = 0;
+document.addEventListener('click', e => { if(Date.now() < swallowUntil){ e.stopPropagation(); e.preventDefault(); } }, true);
+
+/* ===== โลโก้ (SVG) =====
+   ตรา "P" กลางวงกลมไล่สี ล้อมด้วยจุดสี = จำนวนระบบ (สีตรงกับการ์ดแต่ละใบ) — พื้นนอกมุมโค้งโปร่งใส */
+const P_OUT = 'M48 42h13a11 11 0 0 1 0 22h-5v14h-8z M56 50v7h5a3.5 3.5 0 0 0 0-7z';
+function dotPos(i){ const t = -Math.PI/2 + i*2*Math.PI/Math.max(1, APPS.length); return [60 + 42*Math.cos(t), 60 + 42*Math.sin(t)]; }
 function logoSVG(id){
-  const dots = APPS.map((a,i)=>{ const p=dotPos(i); return `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="4" fill="${a.c[0]}"/>`; }).join('');
-  return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><defs>
+  const dots = APPS.map((a,i) => { const p = dotPos(i); return `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="4" fill="${a.c[0]}"/>`; }).join('');
+  return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
   <linearGradient id="bg${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1e1b4b"/><stop offset=".6" stop-color="#16225a"/><stop offset="1" stop-color="#0e4a63"/></linearGradient>
   <linearGradient id="ct${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset=".5" stop-color="#6366f1"/><stop offset="1" stop-color="#ec4899"/></linearGradient>
   <linearGradient id="pw${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#e0e7ff"/></linearGradient>
@@ -204,13 +356,10 @@ function logoSVG(id){
   <path d="M34 50a29 29 0 0 1 52 0" fill="none" stroke="#fff" stroke-opacity=".25" stroke-width="3" stroke-linecap="round"/>
   <path d="${P_OUT}" fill="url(#pw${id})" fill-rule="evenodd"/></svg>`;
 }
-let logoN = 0;
-$$('[data-logo]').forEach(el => { el.innerHTML = logoSVG(logoN++); });
 
-/* ===== วันที่ พ.ศ. + เวลา (คำนวณจริงจาก Date) ===== */
-const MONTHS=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
-const DAYS=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
-const p2 = n => String(n).padStart(2,'0');
+/* ===== วันที่ พ.ศ. + เวลา (ตรงต้นวินาที ไม่คลาดสะสม) ===== */
+const MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const DAYS = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
 function tick(){
   const d = new Date();
   const ds = `วัน${DAYS[d.getDay()]}ที่ ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()+543}`;
@@ -218,114 +367,352 @@ function tick(){
   $$('[data-date]').forEach(e => e.textContent = ds);
   $$('[data-time]').forEach(e => e.textContent = ts);
 }
-tick(); setInterval(tick, 1000);
+function clockLoop(){ tick(); setTimeout(clockLoop, 1000 - Date.now() % 1000 + 15); }
 
-/* ===== การ์ดแอป ===== */
-function render(){
-  const k = $('#q').value.trim().toLowerCase();
-  const list = APPS.filter(a => (grp==='ทั้งหมด'||a.g===grp) && (a.n+a.d+a.g).toLowerCase().includes(k));
-  $('#grid').innerHTML = list.map((a,i) =>
-   `<a class="card" href="${a.u}" target="_blank" rel="noopener" data-n="${a.n}" style="background:linear-gradient(135deg,${a.c[0]},${a.c[1]});animation-delay:${i*60}ms;--glow:${a.c[0]}99"><!-- -->
-     <span class="go">↗</span><div class="ic" style="--d:-${(i*0.7).toFixed(1)}s">${a.i}</div><h3>${a.n}</h3><p>${a.d}</p><span class="tag">${a.g}</span></a>`).join('');
+/* ===== การ์ดแอป + ค้นหา ===== */
+let grp = 'ทั้งหมด';
+const matchQ = (a, q) => !q || q.split(/\s+/).filter(Boolean).every(w => (a.n + ' ' + a.d + ' ' + a.g).toLowerCase().includes(w)); // หลายคำ: ทุกคำต้องตรง
+function render(animate){
+  const q = $('#q').value.trim().toLowerCase();
+  $('#sBox').classList.toggle('has', !!$('#q').value);
+  const list = APPS.map((a,k) => ({...a, k})).filter(a => (grp === 'ทั้งหมด' || a.g === grp) && matchQ(a, q));
+  $('#grid').innerHTML = list.map((a,i) => {
+    const f = pool.get(a.k), warm = f && f.ready;
+    return `<button type="button" class="card${warm?' warm':''}" data-k="${a.k}" aria-label="เปิด ${esc(a.n)}" style="background:linear-gradient(135deg,${a.c[0]},${a.c[1]});${animate?`animation-delay:${i*60}ms`:'animation:none'};--glow:${a.c[0]}99">
+     <span class="go">${warm?'⚡ พร้อม':'เปิด'}</span><div class="ic" style="--d:-${(i*0.7).toFixed(1)}s">${a.i}</div><h3>${esc(a.n)}</h3><p>${esc(a.d)}</p><span class="tag">${esc(a.g)}</span></button>`;
+  }).join('');
   $('#empty').style.display = list.length ? 'none' : 'block';
 }
 function renderChips(){
-  $('#chips').innerHTML = GROUPS.map(g => `<button class="chip${g===grp?' on':''}" data-g="${g}">${g}</button>`).join('');
+  const cnt = g => g === 'ทั้งหมด' ? APPS.length : APPS.filter(a => a.g === g).length;
+  $('#chips').innerHTML = GROUPS.map(g => `<button type="button" class="chip${g===grp?' on':''}" role="tab" aria-selected="${g===grp}" data-g="${esc(g)}">${esc(g)}<span class="c">${cnt(g)}</span></button>`).join('');
 }
 function renderStats(){
-  const cnt = g => APPS.filter(a=>a.g===g).length;
+  const cnt = g => APPS.filter(a => a.g === g).length;
   const S = [['ระบบทั้งหมด',APPS.length,'#6366f1,#8b5cf6'],['บุคลากร',cnt('บุคลากร'),'#ec4899,#f43f5e'],['วิเคราะห์ยอด',cnt('วิเคราะห์ยอด'),'#06b6d4,#3b82f6'],['ฐานข้อมูล',cnt('ฐานข้อมูล'),'#10b981,#059669']];
-  $('#stats').innerHTML = S.map(s=>`<div class="stat" style="background:linear-gradient(135deg,${s[2]})"><b data-n="${s[1]}">0</b><span>${s[0]}</span></div>`).join('');
+  $('#stats').innerHTML = S.map(s => `<div class="stat" style="background:linear-gradient(135deg,${s[2]})"><b data-n="${s[1]}">0</b><span>${s[0]}</span></div>`).join('');
 }
-$('#chips').addEventListener('click', e => { const b=e.target.closest('.chip'); if(!b) return; grp=b.dataset.g; renderChips(); render(); });
-$('#q').addEventListener('input', render);
-$('#grid').addEventListener('click', e => { const c=e.target.closest('.card'); if(c) toast('กำลังเปิด '+c.dataset.n+' …'); });
-let tt; function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('on'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('on'),1800); }
-renderChips(); renderStats(); render();
-
-/* ===== ธีม มืด/สว่าง ===== */
-function setTheme(t){ document.documentElement.dataset.theme=t; $('#themeBtn').textContent = t==='light'?'☀️':'🌙'; try{localStorage.setItem('sbkhub_theme',t)}catch(e){} }
-let saved; try{saved=localStorage.getItem('sbkhub_theme')}catch(e){}
-setTheme(saved||'dark');
-$('#themeBtn').onclick = () => setTheme(document.documentElement.dataset.theme==='light'?'dark':'light');
-
-/* ===== Splash -> Auto-Enter ===== */
-let entered=false;
-function enter(){ if(entered) return; entered=true; $('#splash').classList.add('out'); $('#app').classList.add('show'); setTimeout(()=>{$('#splash').style.display='none'},750); countUp(); resetIdle(); }
-setTimeout(enter, SPLASH_MS);
-$('#splash').addEventListener('pointerdown', enter);
-
-/* ===== พักหน้าจอเมื่อไม่มีการใช้งาน ===== */
-let idleT, moveT, driftT;
-function startSaver(){
-  $('#saver').classList.add('on');
-  const mv = () => { const b=$('#sbox'); b.style.left=(25+Math.random()*50)+'%'; b.style.top=(30+Math.random()*40)+'%'; };
-  mv(); driftT = setInterval(mv, 12000);
+function countUp(){
+  $$('.stat b').forEach(b => {
+    const n = +b.dataset.n || 0; if(RM){ b.textContent = n; return; }
+    const t0 = performance.now();
+    (function f(t){ const k = Math.min(1, Math.max(0, (t - t0) / 900)); b.textContent = Math.round(n * (1 - Math.pow(1 - k, 3))); if(k < 1) requestAnimationFrame(f); })(t0);
+  });
 }
-function wake(){ $('#saver').classList.remove('on'); clearInterval(driftT); }
-function resetIdle(){ clearTimeout(idleT); if(entered) idleT = setTimeout(startSaver, IDLE_MS); }
-function activity(){
-  const now = Date.now(); if(now-moveT<500) return; moveT=now;   // กันเหตุการณ์ถี่เกินไป
-  if($('#saver').classList.contains('on')) wake();
+function markWarm(k, on){ const c = $(`#grid .card[data-k="${k}"]`); if(!c) return; c.classList.toggle('warm', !!on); const g = c.querySelector('.go'); if(g) g.textContent = on ? '⚡ พร้อม' : 'เปิด'; }
+
+/* ===== เปิดแอป: Viewer เต็มจอ + iframe pool (แบบเดียวกับ SBK Center Hub) =====
+   ทำไมต้อง pool: ถ้าโหลดใหม่ทุกครั้ง (รวมดึงข้อมูล Google Sheets) จะช้า
+   แอปที่ชี้เมาส์/ใช้บ่อย จะโหลดรอไว้ก่อน และกลับมาเปิดซ้ำได้ทันที / ค้างเกิน staleMs → โหลดใหม่ให้ข้อมูลไม่เก่า */
+const USE_KEY = 'sbkhub_usage';
+const pool = new Map(); // index แอป -> {el,url,ready,at,used,expect,navs}
+let cur = -1, slowT = null, opening = false;
+function dropFrame(k){ const f = pool.get(k); if(!f) return; pool.delete(k); f.el.remove(); markWarm(k, false); } // ลบทิ้งเลย (ตั้ง src=about:blank จะเพิ่มประวัติ Back ให้รก)
+function evictPool(){
+  while(pool.size > CFG.poolMax){ // ทิ้งตัวที่ไม่ได้ใช้นานที่สุด (ยกเว้นแอปที่กำลังเปิดอยู่)
+    let ok = null, ot = Infinity;
+    pool.forEach((f,k) => { if(k !== cur && f.used < ot){ ot = f.used; ok = k; } });
+    if(ok === null) break; dropFrame(ok);
+  }
+}
+function getFrame(i){
+  let f = pool.get(i);
+  if(!f){
+    const el = document.createElement('iframe');
+    el.className = 'appf'; el.title = APPS[i].n;
+    el.setAttribute('allow', 'camera; microphone; geolocation; clipboard-read; clipboard-write; fullscreen');
+    el.setAttribute('allowfullscreen', ''); el.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+    f = {el, url:APPS[i].u, ready:false, at:0, used:Date.now(), expect:true, navs:0};
+    el.addEventListener('load', () => {
+      if(pool.get(i) !== f) return;
+      if(f.expect) f.expect = false; else f.navs++; // มีการเปลี่ยนหน้าภายในแอป → ปุ่มกลับจะไม่ใช้ history.back() (ไม่งั้นกลายเป็นย้อนหน้าในแอป)
+      f.ready = true; f.at = Date.now(); el.classList.add('ready'); markWarm(i, true);
+      if(cur === i) hideLoad();
+    });
+    el.src = f.url; // ตั้ง src ก่อนใส่ลง DOM (ไม่เกิดหน้า about:blank คั่น)
+    $('#frames').appendChild(el); pool.set(i, f); evictPool();
+  }
+  f.used = Date.now(); return f;
+}
+function warm(i){
+  if(!APPS[i]) return;
+  if(navigator.connection && navigator.connection.saveData) return; // เคารพโหมดประหยัดข้อมูล
+  if(navigator.onLine === false) return;
+  try{ getFrame(i); }catch(e){ reportErr(e, 'warm'); }
+}
+function bumpUse(i){ const u = store.json(USE_KEY, {}), n = APPS[i].n; u[n] = (Number(u[n]) || 0) + 1; store.set(USE_KEY, JSON.stringify(u)); }
+function warmTop(){ const u = store.json(USE_KEY, {}); APPS.map((a,i) => [i, Number(u[a.n]) || 0]).filter(x => x[1] > 0).sort((a,b) => b[1] - a[1]).slice(0, 2).forEach(x => warm(x[0])); }
+function markCur(f){ $$('.appf').forEach(x => x.classList.toggle('cur', !!f && x === f.el)); }
+function hideLoad(){ clearTimeout(slowT); $('#vLoad').classList.add('off'); }
+function showLoad(){
+  const off = navigator.onLine === false, t = $('#vLoadTxt');
+  $('#vLoad').classList.remove('off');
+  t.className = 'ltxt' + (off ? ' warn' : '');
+  t.textContent = off ? '📡 ไม่มีการเชื่อมต่ออินเทอร์เน็ต — ระบบจะโหลดต่อเมื่อกลับมาออนไลน์' : 'กำลังโหลดระบบ...';
+  clearTimeout(slowT);
+  slowT = setTimeout(() => { if(cur >= 0){ t.className = 'ltxt warn'; t.textContent = 'ใช้เวลานานกว่าปกติ — ตรวจสอบอินเทอร์เน็ต กด "ลองใหม่" หรือเปิดในแท็บใหม่'; } }, CFG.slowMs);
+}
+// โหลดใหม่ด้วย location.replace → ไม่เพิ่มรายการในปุ่ม Back (ใช้ได้แม้ข้ามโดเมน) / bust=true เลี่ยงแคช ได้ข้อมูลล่าสุด
+function reloadFrame(f, bust){
+  f.ready = false; f.expect = true; f.el.classList.remove('ready');
+  const u = bust ? f.url + (f.url.includes('?') ? '&' : '?') + '_t=' + Date.now() : f.url;
+  try{ f.el.contentWindow.location.replace(u); }catch(e){ f.el.src = u; }
+}
+function openApp(k){
+  const a = APPS[k]; if(!a) return;
+  cur = k;
+  $('#vTitle').textContent = a.i + ' ' + a.n; $('#vLoadIc').textContent = a.i; $('#vLoadName').textContent = a.n;
+  bumpUse(k);
+  let f;
+  try{ f = getFrame(k); }catch(e){ reportErr(e, 'openApp'); cur = -1; window.open(a.u, '_blank', 'noopener'); return; }
+  f.navs = 0;
+  if(f.ready && Date.now() - f.at > CFG.staleMs) reloadFrame(f, true); // แอปค้างนานเกินไป → โหลดข้อมูลใหม่
+  markCur(f);
+  if(f.ready) hideLoad(); else showLoad();
+  $('#viewer').hidden = false; document.body.classList.add('vw', 'lock');
+  if(!(history.state && history.state.v)){ try{ history.pushState({v:1}, ''); }catch(e){} } // ปุ่ม Back ของมือถือ = กลับหน้าหลัก
   resetIdle();
 }
-['pointerdown','pointermove','keydown','wheel','scroll','touchstart'].forEach(ev => window.addEventListener(ev, activity, {passive:true}));
-document.addEventListener('visibilitychange', () => { if(!document.hidden) resetIdle(); });
+function closeView(){
+  clearTimeout(slowT); cur = -1; markCur(null); // ซ่อนแอป แต่ยังเก็บไว้ใน pool เพื่อเปิดซ้ำได้เร็ว
+  $('#viewer').hidden = true; document.body.classList.remove('vw', 'lock');
+  resetIdle();
+}
+function goHome(){
+  if(cur < 0) return;
+  const f = pool.get(cur);
+  if(history.state && history.state.v && f && f.navs === 0) history.back(); // ปิดผ่าน popstate → ประวัติตรงกัน
+  else{ closeView(); try{ if(history.state && history.state.v) history.replaceState(null, ''); }catch(e){} }
+}
+function reloadCur(){ const f = pool.get(cur); if(!f) return; showLoad(); reloadFrame(f, true); }
+const openTab = () => { if(cur >= 0) window.open(APPS[cur].u, '_blank', 'noopener'); };
 
+function bindCards(){
+  const grid = $('#grid');
+  grid.addEventListener('click', e => {
+    const c = e.target.closest('.card'); if(!c || opening) return;
+    const k = +c.dataset.k; if(!APPS[k]) return;
+    opening = true; warm(k); // เริ่มโหลดทันทีระหว่างอนิเมชันริปเปิล
+    const r = c.getBoundingClientRect(), s = document.createElement('span'); s.className = 'rip';
+    s.style.left = ((e.clientX || r.left + r.width/2) - r.left) + 'px'; s.style.top = ((e.clientY || r.top + r.height/2) - r.top) + 'px';
+    c.appendChild(s); setTimeout(() => s.remove(), 750);
+    setTimeout(() => { c.style.transform = ''; opening = false; openApp(k); }, RM ? 0 : 180);
+  });
+  // การ์ดเอียง 3D + แสงตามเมาส์ (เฉพาะเมาส์จริง — บนมือถือไม่เอียง ไม่ให้หน้าสั่น)
+  if(FINE && !RM){
+    let q = 0, ev = null;
+    grid.addEventListener('pointermove', e => {
+      if(e.pointerType !== 'mouse') return; ev = e; if(q) return;
+      q = requestAnimationFrame(() => { q = 0; const c = ev.target.closest && ev.target.closest('.card'); if(!c) return;
+        const r = c.getBoundingClientRect(), x = (ev.clientX - r.left) / r.width, y = (ev.clientY - r.top) / r.height;
+        c.style.setProperty('--mx', x*100 + '%'); c.style.setProperty('--my', y*100 + '%');
+        c.style.transform = `perspective(700px) rotateX(${((.5-y)*9).toFixed(1)}deg) rotateY(${((x-.5)*9).toFixed(1)}deg) translateY(-4px)`; });
+    });
+  }
+  // ชี้เมาส์ค้าง = เริ่มโหลดแอปล่วงหน้า (เฉพาะเมาส์ — บนมือถือเลื่อนผ่านจะไม่โหลดทุกการ์ดจนเปลืองเน็ต)
+  grid.addEventListener('pointerover', e => {
+    if(e.pointerType !== 'mouse') return;
+    const c = e.target.closest('.card'); if(!c || c.contains(e.relatedTarget)) return;
+    clearTimeout(c._w); c._w = setTimeout(() => warm(+c.dataset.k), 150);
+  });
+  grid.addEventListener('pointerout', e => {
+    const c = e.target.closest('.card'); if(!c || c.contains(e.relatedTarget)) return;
+    c.style.transform = ''; clearTimeout(c._w);
+  });
+}
 
-/* ===== v2: เอฟเฟกต์เพิ่มเติม ===== */
-// คำทักทายตามช่วงเวลา (คำนวณจากเวลาจริง)
-(function(){ const h=new Date().getHours();
-  const g = h<5?['🌙','สวัสดีค่ะ/ครับ ยามดึก']:h<12?['☀️','สวัสดีตอนเช้า']:h<17?['🌤️','สวัสดีตอนบ่าย']:h<20?['🌇','สวัสดีตอนเย็น']:['🌙','สวัสดีตอนค่ำ'];
-  $('#hEm').textContent=g[0]; $('#hTx').textContent=g[1]+' · ยินดีต้อนรับสู่ SBK Parking Hub'; })();
-// นับตัวเลขขึ้นแบบนุ่มนวล
-function countUp(){ $$('.stat b').forEach(b=>{ const n=+b.dataset.n, t0=performance.now();
-  (function f(t){ const k=Math.min(1,(t-t0)/900); b.textContent=Math.round(n*(1-Math.pow(1-k,3))); if(k<1) requestAnimationFrame(f); })(t0); }); }
-// การ์ดเอียง 3D + แสงตามเมาส์ (เฉพาะเมาส์ — บนมือถือไม่เอียงเพื่อไม่ให้หน้าสั่น) + ripple ตอนกด
-const grid=$('#grid');
-grid.addEventListener('pointermove', e=>{ if(e.pointerType!=='mouse') return; const c=e.target.closest('.card'); if(!c) return;
-  const r=c.getBoundingClientRect(), x=(e.clientX-r.left)/r.width, y=(e.clientY-r.top)/r.height;
-  c.style.setProperty('--mx',x*100+'%'); c.style.setProperty('--my',y*100+'%');
-  c.style.transform=`perspective(700px) rotateX(${((.5-y)*9).toFixed(1)}deg) rotateY(${((x-.5)*9).toFixed(1)}deg) translateY(-4px)`; });
-grid.addEventListener('pointerout', e=>{ const c=e.target.closest('.card'); if(c && !c.contains(e.relatedTarget)) c.style.transform=''; });
-grid.addEventListener('pointerdown', e=>{ const c=e.target.closest('.card'); if(!c) return; const r=c.getBoundingClientRect();
-  const s=document.createElement('span'); s.className='rip'; s.style.left=(e.clientX-r.left)+'px'; s.style.top=(e.clientY-r.top)+'px'; c.appendChild(s); setTimeout(()=>s.remove(),750); });
-// อนุภาคลอยเชื่อมเส้นที่พื้นหลัง (จำกัดจำนวนและ DPR เพื่อประหยัดแบตมือถือ หยุดเมื่อซ่อนแท็บ/พักหน้าจอ)
-(function(){ const cv=$('#fx'), x=cv.getContext('2d'); let W,H,P=[];
-  const cols=['34,211,238','167,139,250','244,114,182','251,191,36'];
-  function size(){ const d=Math.min(devicePixelRatio||1,1.5); W=cv.width=innerWidth*d; H=cv.height=innerHeight*d;
-    const n=Math.min(55,Math.round(innerWidth*innerHeight/22000)); P=Array.from({length:n},()=>({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.35*d,vy:(Math.random()-.5)*.35*d,r:(1.2+Math.random()*2)*d,c:cols[(Math.random()*4)|0]})); }
-  size(); addEventListener('resize',size);
-  function draw(){ requestAnimationFrame(draw);
-    if(document.hidden||$('#saver').classList.contains('on')||!entered) return;
-    const light=document.documentElement.dataset.theme==='light', a=light?.5:.8, L=130*(W/innerWidth);
-    x.clearRect(0,0,W,H);
-    for(const p of P){ p.x+=p.vx; p.y+=p.vy; if(p.x<0||p.x>W) p.vx*=-1; if(p.y<0||p.y>H) p.vy*=-1;
-      x.fillStyle=`rgba(${p.c},${a*.7})`; x.beginPath(); x.arc(p.x,p.y,p.r,0,6.283); x.fill(); }
-    for(let i=0;i<P.length;i++) for(let j=i+1;j<P.length;j++){ const dx=P[i].x-P[j].x, dy=P[i].y-P[j].y, d=Math.hypot(dx,dy);
-      if(d<L){ x.strokeStyle=`rgba(${P[i].c},${(1-d/L)*a*.35})`; x.lineWidth=1; x.beginPath(); x.moveTo(P[i].x,P[i].y); x.lineTo(P[j].x,P[j].y); x.stroke(); } } }
-  draw(); })();
+/* ===== ธีม มืด/สว่าง ===== */
+function setTheme(t, save){
+  if(t !== 'dark' && t !== 'light') t = 'dark';
+  document.documentElement.dataset.theme = t; $('#themeBtn').textContent = t === 'light' ? '☀️' : '🌙';
+  const m = document.querySelector('meta[name=theme-color]'); if(m) m.content = t === 'light' ? '#eef3ff' : '#0b1020';
+  if(save) store.set('sbkhub_theme', t);
+}
 
-/* ===== ไอคอนแอป (PWA / หน้าจอหลัก) สร้างจากโลโก้เดียวกัน ===== */
-function makeIcon(sz){
-  const c=document.createElement('canvas'); c.width=c.height=sz; const x=c.getContext('2d'), k=sz/120;
-  const g=x.createLinearGradient(0,0,sz,sz); g.addColorStop(0,'#1e1b4b'); g.addColorStop(.6,'#16225a'); g.addColorStop(1,'#0e4a63');
-  x.fillStyle=g; x.beginPath(); x.roundRect?x.roundRect(0,0,sz,sz,sz*.25):x.rect(0,0,sz,sz); x.fill();
-  x.save(); x.scale(k,k);
-  APPS.forEach((a,i)=>{ const p=dotPos(i); x.fillStyle=a.c[0]; x.beginPath(); x.arc(p[0],p[1],4,0,6.283); x.fill(); });
-  const cg=x.createLinearGradient(31,31,89,89); cg.addColorStop(0,'#22d3ee'); cg.addColorStop(.5,'#6366f1'); cg.addColorStop(1,'#ec4899');
-  x.fillStyle=cg; x.beginPath(); x.arc(60,60,29,0,6.283); x.fill();
-  x.strokeStyle='rgba(255,255,255,.45)'; x.lineWidth=1.5; x.stroke();
-  x.fillStyle='#fff'; x.fill(new Path2D(P_OUT),'evenodd'); x.restore();
+/* ===== Splash -> Auto-Enter ===== */
+let entered = false, splashT = null;
+function enter(){
+  if(entered) return; entered = true; clearTimeout(splashT);
+  $('#splash').classList.add('out'); $('#app').classList.add('show'); document.body.classList.remove('lock');
+  setTimeout(() => { $('#splash').style.display = 'none'; }, 750);
+  countUp(); resetIdle();
+  setTimeout(() => { if(cur < 0) warmTop(); }, 1200); // โหลดแอปที่ใช้บ่อยรอไว้ล่วงหน้า
+}
+
+/* ===== พักหน้าจอเมื่อไม่มีการใช้งาน (เป็นแค่ฉากบัง ไม่ปิดแอปที่เปิดอยู่ → ข้อมูลไม่หาย) ===== */
+let idleT = null, driftT = null, lastAct = 0, hiddenAt = 0;
+const saverOn = () => $('#saver').classList.contains('on');
+function moveBox(){
+  const b = $('#sbox'), W = innerWidth, H = innerHeight, bw = b.offsetWidth, bh = b.offsetHeight;
+  const x = Math.max(0, W - bw) * Math.random(), y = Math.max(0, H - bh) * Math.random(); // อยู่ในจอเสมอ
+  b.style.transform = `translate(${x.toFixed(0)}px,${y.toFixed(0)}px)`;
+}
+function startSaver(){
+  if(!entered || saverOn()) return;
+  $('#saver').classList.add('on'); document.body.classList.add('lock');
+  const b = $('#sbox'); b.style.transition = 'none';
+  b.style.transform = `translate(${Math.max(0,(innerWidth-b.offsetWidth)/2)}px,${Math.max(0,(innerHeight-b.offsetHeight)/2)}px)`;
+  void b.offsetWidth; b.style.transition = '';
+  clearInterval(driftT); if(!RM) driftT = setInterval(moveBox, 12000);
+}
+function wake(e){
+  if(saverOn()){
+    $('#saver').classList.remove('on'); clearInterval(driftT);
+    if(cur < 0) document.body.classList.remove('lock');
+    if(e && (e.type === 'pointerdown' || e.type === 'touchstart' || e.type === 'keydown')) swallowUntil = Date.now() + 600;
+  }
+  resetIdle();
+}
+function resetIdle(){ clearTimeout(idleT); if(entered) idleT = setTimeout(startSaver, CFG.idleMs); }
+function activity(e){
+  const now = Date.now();
+  if(saverOn()){ if(e.type === 'pointermove' && e.pointerType !== 'mouse') return; wake(e); return; }
+  if(now - lastAct < 500) return; lastAct = now; // กันเหตุการณ์ถี่เกินไป
+  resetIdle();
+}
+function bindIdle(){
+  ['pointerdown','pointermove','keydown','wheel','scroll','touchstart'].forEach(ev => window.addEventListener(ev, activity, {passive:true, capture:true}));
+  // แตะ/คลิกในแอปที่ฝังอยู่ (iframe ต่างโดเมนส่ง event ออกมาไม่ได้) → จับผ่านการเปลี่ยนโฟกัส + เมาส์ค้างอยู่บนแอป
+  addEventListener('blur', () => { setTimeout(() => { const a = document.activeElement; if(a && a.classList && a.classList.contains('appf') && !saverOn()) resetIdle(); }, 0); });
+  let hov = false; $('#frames').addEventListener('mouseenter', () => hov = true); $('#frames').addEventListener('mouseleave', () => hov = false);
+  setInterval(() => { if(hov && !saverOn() && entered && cur >= 0) resetIdle(); }, 15000);
+  // กลับมาจากจอดับ/สลับแอปนานเกินกำหนด → พักหน้าจอทันที (setTimeout ถูกหน่วงตอนจอดับ)
+  document.addEventListener('visibilitychange', () => {
+    if(document.hidden){ hiddenAt = Date.now(); return; }
+    tick();
+    if(entered && hiddenAt && Date.now() - hiddenAt > CFG.idleMs) startSaver(); else if(!saverOn()) resetIdle();
+  });
+  addEventListener('resize', () => { if(saverOn()) moveBox(); });
+}
+
+/* ===== คำทักทายตามช่วงเวลา (คำนวณจากเวลาจริง) ===== */
+function greet(){
+  const h = new Date().getHours();
+  const g = h < 5 ? ['🌙','สวัสดียามดึก'] : h < 12 ? ['☀️','สวัสดีตอนเช้า'] : h < 17 ? ['🌤️','สวัสดีตอนบ่าย'] : h < 20 ? ['🌇','สวัสดีตอนเย็น'] : ['🌙','สวัสดีตอนค่ำ'];
+  $('#hEm').textContent = g[0]; $('#hTx').textContent = g[1] + ' · ยินดีต้อนรับสู่ SBK Parking Hub';
+}
+
+/* ===== ระหว่างเลื่อน: หยุดวาด canvas + หยุดอนิเมชันชั่วคราว (แก้กระพริบบน iOS) ===== */
+let scrolling = false, scT = null;
+function bindScroll(){
+  addEventListener('scroll', () => {
+    if(!scrolling){ scrolling = true; document.body.classList.add('scrolling'); }
+    clearTimeout(scT); scT = setTimeout(() => { scrolling = false; document.body.classList.remove('scrolling'); }, 160);
+  }, {passive:true});
+}
+
+/* ===== อนุภาคลอยเชื่อมเส้นที่พื้นหลัง (จำกัดจำนวน/DPR ประหยัดแบต หยุดเมื่อซ่อนแท็บ/พักหน้าจอ/เปิดแอป/เลื่อน) ===== */
+function initFx(){
+  if(RM) return;
+  const cv = $('#fx'), x = cv.getContext && cv.getContext('2d'); if(!x) return;
+  let W = 0, H = 0, D = 1, P = [], rt = null;
+  const cols = ['34,211,238','167,139,250','244,114,182','251,191,36'];
+  const mk = () => ({x:Math.random()*W, y:Math.random()*H, vx:(Math.random()-.5)*.35*D, vy:(Math.random()-.5)*.35*D, r:(1.2+Math.random()*2)*D, c:cols[(Math.random()*4)|0]});
+  // ปรับขนาดเฉพาะเมื่อขนาดเปลี่ยนจริง + ย่อ/ขยายตำแหน่งเดิม (v3 สุ่มใหม่ทุก resize → iOS ยิง resize ตอนเลื่อน = กระพริบ)
+  function size(){
+    const d = Math.min(devicePixelRatio || 1, 1.5), w = Math.round((cv.clientWidth || innerWidth) * d), h = Math.round((cv.clientHeight || innerHeight) * d);
+    if(w === W && h === H) return;
+    const oW = W || w, oH = H || h; D = d; W = cv.width = w; H = cv.height = h;
+    const n = Math.min(55, Math.round(innerWidth * innerHeight / 22000));
+    P.forEach(p => { p.x *= W/oW; p.y *= H/oH; }); while(P.length < n) P.push(mk()); P.length = n;
+  }
+  size(); addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(size, 200); });
+  (function draw(){
+    requestAnimationFrame(draw);
+    if(document.hidden || saverOn() || !entered || cur >= 0 || scrolling) return;
+    try{
+      const light = document.documentElement.dataset.theme === 'light', a = light ? .5 : .8, L = 130 * D;
+      x.clearRect(0, 0, W, H);
+      for(const p of P){ p.x += p.vx; p.y += p.vy; if(p.x < 0 || p.x > W) p.vx *= -1; if(p.y < 0 || p.y > H) p.vy *= -1;
+        x.fillStyle = `rgba(${p.c},${a*.7})`; x.beginPath(); x.arc(p.x, p.y, p.r, 0, 6.283); x.fill(); }
+      for(let i = 0; i < P.length; i++) for(let j = i + 1; j < P.length; j++){
+        const dx = P[i].x - P[j].x, dy = P[i].y - P[j].y, d = Math.hypot(dx, dy);
+        if(d < L){ x.strokeStyle = `rgba(${P[i].c},${(1-d/L)*a*.35})`; x.lineWidth = 1; x.beginPath(); x.moveTo(P[i].x, P[i].y); x.lineTo(P[j].x, P[j].y); x.stroke(); }
+      }
+    }catch(e){ reportErr(e, 'fx'); }
+  })();
+}
+
+/* ===== ออนไลน์/ออฟไลน์ ===== */
+function bindNetwork(){
+  const upd = first => {
+    const off = navigator.onLine === false;
+    document.body.classList.toggle('offline', off); $('#liveTx').textContent = off ? 'ออฟไลน์' : 'พร้อมใช้งาน';
+    if(!first) toast(off ? '📡 ขาดการเชื่อมต่ออินเทอร์เน็ต' : '✅ กลับมาออนไลน์แล้ว', off ? 'err' : '');
+    if(!first && !off && cur >= 0){ const f = pool.get(cur); if(f && !f.ready) reloadCur(); } // กลับมาออนไลน์ขณะแอปยังโหลดไม่ขึ้น → โหลดใหม่อัตโนมัติ
+  };
+  addEventListener('online', () => upd(false)); addEventListener('offline', () => upd(false)); upd(true);
+}
+
+/* ===== ไอคอนแอป (PWA / หน้าจอหลัก) =====
+   'any' + favicon = มุมโค้ง พื้นนอกมุมโปร่งใส → บน PC (แท็บ/ทาสก์บาร์/เดสก์ท็อป) ไม่เห็นขอบเหลี่ยม
+   'maskable' + iOS = เต็มกรอบ เพราะระบบตัดรูปทรงเอง (v3 ใช้ไอคอนมุมโค้งเป็น maskable → Android เห็นมุมขาว / iOS เห็นมุมดำ) */
+function makeIcon(sz, full){
+  const c = document.createElement('canvas'); c.width = c.height = sz; const x = c.getContext('2d');
+  const g = x.createLinearGradient(0, 0, sz, sz); g.addColorStop(0, '#1e1b4b'); g.addColorStop(.6, '#16225a'); g.addColorStop(1, '#0e4a63');
+  x.fillStyle = g; x.beginPath();
+  if(full) x.rect(0, 0, sz, sz);
+  else{ const m = sz*.025, w = sz - m*2, r = sz*.25; // วาดมุมโค้งเอง (roundRect ไม่มีในเบราว์เซอร์เก่า → v3 ได้ไอคอนเหลี่ยม)
+    x.moveTo(m+r, m); x.arcTo(m+w, m, m+w, m+w, r); x.arcTo(m+w, m+w, m, m+w, r); x.arcTo(m, m+w, m, m, r); x.arcTo(m, m, m+w, m, r); x.closePath(); }
+  x.fill();
+  const k = full ? sz*.8/120 : sz/120, off = full ? sz*.1 : 0;
+  x.save(); x.translate(off, off); x.scale(k, k);
+  APPS.forEach((a,i) => { const p = dotPos(i); x.fillStyle = a.c[0]; x.beginPath(); x.arc(p[0], p[1], 4, 0, 6.283); x.fill(); });
+  const cg = x.createLinearGradient(31, 31, 89, 89); cg.addColorStop(0, '#22d3ee'); cg.addColorStop(.5, '#6366f1'); cg.addColorStop(1, '#ec4899');
+  x.fillStyle = cg; x.beginPath(); x.arc(60, 60, 29, 0, 6.283); x.fill();
+  x.strokeStyle = 'rgba(255,255,255,.45)'; x.lineWidth = 1.5; x.stroke();
+  x.fillStyle = '#fff'; x.fill(new Path2D(P_OUT), 'evenodd'); x.restore();
   return c.toDataURL('image/png');
 }
-try{
-  const i192=makeIcon(192), i512=makeIcon(512), i180=makeIcon(180);
-  $('#fav').href=i192; $('#touch').href=i180;
-  const mf={name:'SBK Parking Hub',short_name:'SBK Parking',display:'standalone',orientation:'any',background_color:'#0b1020',theme_color:'#0b1020',start_url:location.href.split('#')[0],
-    icons:[{src:i192,sizes:'192x192',type:'image/png',purpose:'any maskable'},{src:i512,sizes:'512x512',type:'image/png',purpose:'any maskable'}]};
-  $('#mf').href=URL.createObjectURL(new Blob([JSON.stringify(mf)],{type:'application/manifest+json'}));
-}catch(e){ console.warn('สร้างไอคอนไม่สำเร็จ',e); }
+function setupIcons(){
+  try{
+    $('#fav').type = 'image/png'; $('#fav').href = makeIcon(64, false);
+    $('#touch').href = makeIcon(180, true);
+    const base = location.href.split('#')[0].split('?')[0];
+    const mf = {name:'SBK Parking Hub', short_name:'SBK Parking', lang:'th', display:'standalone', orientation:'any', background_color:'#0b1020', theme_color:'#0b1020',
+      start_url:base, scope:base.replace(/[^/]*$/, ''),
+      icons:[{src:makeIcon(192,false),sizes:'192x192',type:'image/png',purpose:'any'},{src:makeIcon(512,false),sizes:'512x512',type:'image/png',purpose:'any'},
+             {src:makeIcon(192,true),sizes:'192x192',type:'image/png',purpose:'maskable'},{src:makeIcon(512,true),sizes:'512x512',type:'image/png',purpose:'maskable'}]};
+    $('#mf').href = URL.createObjectURL(new Blob([JSON.stringify(mf)], {type:'application/manifest+json'}));
+  }catch(e){ console.warn('สร้างไอคอนไม่สำเร็จ', e); }
+}
+
+/* ===== เริ่มทำงาน ===== */
+function init(){
+  let n = 0; $$('[data-logo]').forEach(el => { el.innerHTML = logoSVG(n++); });
+  clockLoop(); greet();
+  setTheme(document.documentElement.dataset.theme, false);
+  $('#themeBtn').onclick = () => setTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light', true);
+
+  renderChips(); renderStats(); render(true); bindCards();
+  $('#chips').addEventListener('click', e => { const b = e.target.closest('.chip'); if(!b || b.dataset.g === grp) return; grp = b.dataset.g; renderChips(); render(true); });
+  let qT = null;
+  $('#q').addEventListener('input', () => { clearTimeout(qT); qT = setTimeout(() => render(false), 120); });
+  $('#q').addEventListener('keydown', e => { if(e.key === 'Escape'){ $('#q').value = ''; render(false); } if(e.key === 'Enter') $('#q').blur(); });
+  $('#qClr').onclick = () => { $('#q').value = ''; render(false); $('#q').focus(); };
+  $('#emptyReset').onclick = () => { $('#q').value = ''; grp = 'ทั้งหมด'; renderChips(); render(true); };
+
+  $('#vBack').onclick = goHome; $('#vReload').onclick = reloadCur; $('#vLoadRetry').onclick = reloadCur;
+  $('#vOpen').onclick = openTab; $('#vLoadOpen').onclick = openTab;
+  addEventListener('popstate', () => { if(cur >= 0) closeView(); });
+  addEventListener('keydown', e => { if(e.key === 'Escape' && cur >= 0 && !saverOn()) goHome(); });
+
+  // Splash: ใช้ click (v3 ใช้ pointerdown → หน้าหลักขึ้นทันทีแล้ว click ตกลงบนการ์ดใต้นิ้ว = เปิดแอปโดยไม่ตั้งใจ)
+  $('#pb').style.setProperty('--dur', CFG.splashMs + 'ms');
+  splashT = setTimeout(enter, CFG.splashMs);
+  $('#splash').addEventListener('click', enter);
+  $('#splash').addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); enter(); } });
+  try{ $('#splash').focus({preventScroll:true}); }catch(e){}
+
+  bindIdle(); bindScroll(); bindNetwork(); initFx(); setupIcons();
+}
+try{ init(); }
+catch(e){
+  // เริ่มระบบไม่สำเร็จ → อย่าค้างหน้าโลโก้ ให้เข้าหน้าหลักได้
+  console.error('[SBK Parking Hub] init failed', e);
+  try{ $('#splash').style.display = 'none'; $('#app').classList.add('show'); document.body.classList.remove('lock'); entered = true; }catch(_){}
+  toast('เริ่มระบบไม่สมบูรณ์ กรุณารีเฟรชหน้า', 'err');
+}
 </script>
 </body>
 </html>
